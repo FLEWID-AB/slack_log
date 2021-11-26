@@ -37,9 +37,11 @@ defmodule SlackLog do
   defp log_event(_level, _msg, _ts, _meta, %{slack_url: nil} = state) do
     {:ok, state}
   end
-  defp log_event(level, msg, ts, meta, %{slack_url: slack_url, metadata: metadata}) when is_binary(slack_url) do
+  defp log_event(level, msg, ts, meta, %{slack_url: slack_url, metadata: metadata} = state) when is_binary(slack_url) do
     message = SlackLog.Formatter.format_message(level, msg, ts, take_params(meta, metadata)) |> Jason.encode!()
     Messenger.send(slack_url, message)
+
+    {:ok, state}
   end
 
 
