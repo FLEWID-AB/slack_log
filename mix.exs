@@ -6,13 +6,14 @@ defmodule SlackLog.MixProject do
   def project do
     [
       app: :slack_log,
-      description: "Simple logger backend that posts notifications to a Slack channel",
+      description: "Simple logger backend that posts notifications to Slack channels",
       version: @version,
       elixir: "~> 1.0",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
       test_coverage: [tool: ExCoveralls],
+      source_url: "https://github.com/FLEWID-AB/slack_log",
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.detail": :test,
@@ -42,6 +43,7 @@ defmodule SlackLog.MixProject do
       links: %{"GitHub" => "https://github.com/FLEWID-AB/slack_log"},
       files: [
         "lib",
+        ".formatter.exs",
         "mix.exs",
         "README*",
         "LICENSE*"
