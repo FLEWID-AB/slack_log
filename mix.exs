@@ -12,6 +12,13 @@ defmodule SlackLog.MixProject do
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ],
       docs: [
         main: "readme",
         source_ref: "v#{@version}",
@@ -49,7 +56,8 @@ defmodule SlackLog.MixProject do
       {:jason, ">= 1.0.0"},
       {:credo, "~> 1.6", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
-      {:bypass, "~> 2.1", only: :test}
+      {:bypass, "~> 2.1", only: :test},
+      {:excoveralls, "~> 0.10", only: :test}
     ]
   end
 

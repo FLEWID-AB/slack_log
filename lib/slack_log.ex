@@ -38,15 +38,23 @@ defmodule SlackLog do
     {:ok, state}
   end
   defp log_event(level, msg, ts, meta, %{slack_url: slack_url, metadata: metadata} = state) when is_binary(slack_url) do
-    message = SlackLog.Formatter.format_message(level, msg, ts, take_params(meta, metadata)) |> Jason.encode!()
+    message = SlackLog.Formatter.format_message({level, msg, ts, meta}, metadata) |> Jason.encode!()
     Messenger.send(slack_url, message)
 
     {:ok, state}
   end
 
-
+  @spec metadata_matches?(Keyword.t(), any()) :: boolean()
   def metadata_matches?(_meta, nil), do: true
   def metadata_matches?(_meta, []), do: true
+  def metadata_matches?(meta, [{key, val} | tail]) when is_list(val) do
+    case Keyword.fetch(meta, key) do
+      {:ok, value} ->
+        (value in val) && metadata_matches?(meta, tail)
+
+      _ -> false
+    end
+  end
   def metadata_matches?(meta, [{key, val} | tail]) do
     case Keyword.fetch(meta, key) do
       {:ok, ^val} ->
@@ -67,24 +75,6 @@ defmodule SlackLog do
     }
 
     configure(name, opts, state)
-  end
-
-  # Function that takes and stringifies the given params from a keyword list
-  defp take_params(_data, :none), do: ""
-
-  defp take_params(data, :all), do: format_keyword_list(data)
-  defp take_params(data, nil), do: format_keyword_list(data)
-
-  defp take_params(data, fields) do
-    data
-    |> Keyword.take(fields)
-    |> format_keyword_list
-  end
-
-  # Helper function that stringifies each {key, val} in a keyword list
-  defp format_keyword_list(list) do
-    list
-    |> Enum.reduce("", fn {k, v}, acc -> "#{k}: #{inspect(v)}\n" <> acc end)
   end
 
   defp configure(name, opts, state) do
