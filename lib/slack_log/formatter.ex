@@ -7,7 +7,7 @@ defmodule SlackLog.Formatter do
   @doc """
   Compose a new message
   """
-  def format_message({level, message, timestamp, metadata} = info, show_meta) do
+  def format_message(info, show_meta) do
     blocks = []
       |> add_block(:header, info)
       |> add_block(:info, info)
@@ -53,7 +53,7 @@ defmodule SlackLog.Formatter do
       type: "section",
       text: %{
         type: "plain_text",
-        text: message,
+        text: format_message(message),
         emoji: true
       }
     }]
@@ -81,6 +81,14 @@ defmodule SlackLog.Formatter do
       }]
     end
   end
+
+  defp format_message(message) when is_binary(message), do: message
+  defp format_message(message) when is_list(message) do
+    message
+    |> Enum.map(&format_message(&1))
+    |> Enum.join(", ")
+  end
+  defp format_message(message), do: inspect(message)
 
   defp parse_ts({date, time}) do
     d = date

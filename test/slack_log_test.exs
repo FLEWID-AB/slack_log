@@ -29,6 +29,20 @@ defmodule SlackLogTest do
     :timer.sleep(100)
   end
 
+  test "it handles list messages a log to Slack", %{bypass: bypass} do
+    Bypass.expect bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      {:ok, body, _conn} = Plug.Conn.read_body(conn)
+      assert body =~ "This is going to Slack"
+      assert body =~ "test"
+      Plug.Conn.resp(conn, 200, "ok")
+    end
+    Logger.debug(["This is going to Slack", "test"])
+    Logger.flush()
+    :timer.sleep(100)
+  end
+
   @metadata [test: 1, test2: 2]
   describe "metadata_matches?/2" do
     test "it returns true if nil or empty" do
