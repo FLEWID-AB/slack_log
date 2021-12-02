@@ -83,12 +83,7 @@ defmodule SlackLog.Formatter do
   end
 
   defp format_message(message) when is_binary(message), do: message
-  defp format_message(message) when is_list(message) do
-    message
-    |> Enum.map(&format_message(&1))
-    |> Enum.join(", ")
-  end
-  defp format_message(message), do: inspect(message)
+  defp format_message(message), do: "#{inspect(message)}"
 
   defp parse_ts({date, time}) do
     d = date

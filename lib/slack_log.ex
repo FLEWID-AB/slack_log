@@ -23,6 +23,8 @@ defmodule SlackLog do
   def handle_event({level, _pid, {Logger, msg, ts, meta}}, %{level: min_level, metadata_filter: metadata_filter} = state) do
     if is_nil(min_level) or Logger.compare_levels(level, min_level) != :lt and metadata_matches?(meta, metadata_filter) do
       log_event(level, msg, ts, meta, state)
+    else
+      {:ok, state}
     end
   end
 
@@ -48,23 +50,31 @@ defmodule SlackLog do
     {:ok, state}
   end
 
-  @spec metadata_matches?(Keyword.t(), any()) :: boolean()
-  def metadata_matches?(_meta, nil), do: true
-  def metadata_matches?(_meta, []), do: true
-  def metadata_matches?(meta, [{key, val} | tail]) when is_list(val) do
-    case Keyword.fetch(meta, key) do
-      {:ok, value} ->
-        (value in val) && metadata_matches?(meta, tail)
+  @doc false
+  @spec metadata_matches?(Keyword.t(), nil | Keyword.t()) :: true | false
+  def metadata_matches?(_md, nil), do: true
+  # all of the filter keys are present
+  def metadata_matches?(_md, []), do: true
 
-      _ -> false
+  def metadata_matches?(md, [{key, [_ | _] = val} | rest]) do
+    case Keyword.fetch(md, key) do
+      {:ok, md_val} ->
+        (md_val in val) && metadata_matches?(md, rest)
+
+      # fail on first mismatch
+      _ ->
+        false
     end
   end
-  def metadata_matches?(meta, [{key, val} | tail]) do
-    case Keyword.fetch(meta, key) do
-      {:ok, ^val} ->
-        metadata_matches?(meta, tail)
 
-      _ -> false
+  def metadata_matches?(md, [{key, val} | rest]) do
+    case Keyword.fetch(md, key) do
+      {:ok, ^val} ->
+        metadata_matches?(md, rest)
+
+      # fail on first mismatch
+      _ ->
+        false
     end
   end
 

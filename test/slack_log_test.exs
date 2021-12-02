@@ -43,6 +43,58 @@ defmodule SlackLogTest do
     :timer.sleep(100)
   end
 
+  test "it does not log when metadata_filter does not match", %{bypass: bypass} do
+    config(metadata_filter: [area: :test])
+    Bypass.expect bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      {:ok, body, _conn} = Plug.Conn.read_body(conn)
+      assert body =~ "This is going to Slack"
+      refute body =~ "This should not"
+      Plug.Conn.resp(conn, 200, "ok")
+    end
+    Logger.debug("This is going to Slack", area: :test)
+    Logger.debug("This should not")
+    Logger.flush()
+    :timer.sleep(100)
+    config(metadata_filter: [])
+  end
+
+  test "it does log when metadata filter is a list and value is in list", %{bypass: bypass} do
+    config(metadata_filter: [area: [:test, :test2]])
+    Bypass.expect bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      {:ok, body, _conn} = Plug.Conn.read_body(conn)
+      assert body =~ "This is going to Slack"
+      refute body =~ "This should not"
+      Plug.Conn.resp(conn, 200, "ok")
+    end
+    Logger.debug("This is going to Slack", area: :test)
+    Logger.debug("This is going to Slack", area: :test2)
+    Logger.debug("This should not", area: :test3)
+    Logger.flush()
+    :timer.sleep(100)
+    config(metadata_filter: [])
+  end
+
+  test "it uses level as min level", %{bypass: bypass} do
+    config(level: :error)
+    Bypass.expect bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      {:ok, body, _conn} = Plug.Conn.read_body(conn)
+      assert body =~ "This is going to Slack"
+      refute body =~ "This should not"
+      Plug.Conn.resp(conn, 200, "ok")
+    end
+    Logger.error("This is going to Slack")
+    Logger.debug("This should not")
+    Logger.flush()
+    :timer.sleep(100)
+    config(level: :debug)
+  end
+
   @metadata [test: 1, test2: 2]
   describe "metadata_matches?/2" do
     test "it returns true if nil or empty" do
@@ -79,6 +131,7 @@ defmodule SlackLogTest do
       Logger.debug("This is going to Slack", area: :import, file: "/path/to/file.ex")
       Logger.flush()
       :timer.sleep(100)
+      config(metadata_filter: nil)
     end
   end
 
